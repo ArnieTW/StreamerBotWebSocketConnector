@@ -11,8 +11,8 @@ namespace StreamerBot
 
         public YouTubeClient(StreamerBotConnector connector)
         {
-            connector.RegisterTypedEventHandler<YouTubeChatMessageEvent>("YouTube", "ChatMessage", evt => OnChatMessage?.Invoke(evt));
-            connector.RegisterTypedEventHandler<YouTubeMemberJoinEvent>("YouTube", "MemberJoin", evt => OnMemberJoin?.Invoke(evt));
+            connector.RegisterTypedEventHandler<YouTubeChatMessageEvent>("YouTube", "Message", evt => OnChatMessage?.Invoke(evt));
+            connector.RegisterTypedEventHandler<YouTubeMemberJoinEvent>("YouTube", "NewSponsor", evt => OnMemberJoin?.Invoke(evt));
             connector.RegisterTypedEventHandler<YouTubeSuperChatEvent>("YouTube", "SuperChat", evt => OnSuperChat?.Invoke(evt));
         }
     }

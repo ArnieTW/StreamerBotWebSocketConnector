@@ -18,10 +18,10 @@ namespace StreamerBot
         {
             _connector = connector;
 
-            connector.RegisterTypedEventHandler<ObsSceneChangedEvent>("OBS", "SceneChanged", evt => OnSceneChanged?.Invoke(evt));
-            connector.RegisterTypedEventHandler<ObsSceneItemVisibilityChangedEvent>("OBS", "SceneItemVisibilityChanged", evt => OnSceneItemVisibilityChanged?.Invoke(evt));
-            connector.RegisterTypedEventHandler<ObsTransitionBeginEvent>("OBS", "TransitionBegin", evt => OnTransitionBegin?.Invoke(evt));
-            connector.RegisterTypedEventHandler<ObsTransitionEndEvent>("OBS", "TransitionEnd", evt => OnTransitionEnd?.Invoke(evt));
+            connector.RegisterTypedEventHandler<ObsSceneChangedEvent>("Obs", "SceneChanged", evt => OnSceneChanged?.Invoke(evt));
+            connector.RegisterTypedEventHandler<ObsSceneItemVisibilityChangedEvent>("Obs", "SceneItemVisibilityChanged", evt => OnSceneItemVisibilityChanged?.Invoke(evt));
+            connector.RegisterTypedEventHandler<ObsTransitionBeginEvent>("Obs", "TransitionBegin", evt => OnTransitionBegin?.Invoke(evt));
+            connector.RegisterTypedEventHandler<ObsTransitionEndEvent>("Obs", "TransitionEnd", evt => OnTransitionEnd?.Invoke(evt));
         }
 
         public Task<ObsGetScenesResponse> GetScenes()

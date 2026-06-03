@@ -40,6 +40,9 @@ namespace StreamerBot
         private readonly ConcurrentDictionary<(string Category, string Name), Delegate> _typedHandlers
             = new();
 
+        private readonly ConcurrentDictionary<(string Category, string Name), Type> _typedHandlerEventTypes
+            = new();
+
         public StreamerBotConnector(string wsUrl)
         {
             _uri = new Uri(wsUrl);
@@ -96,7 +99,9 @@ namespace StreamerBot
         public void RegisterTypedEventHandler<T>(string category, string eventName, StreamerBotEventHandler<T> handler)
             where T : StreamerBotEventBase
         {
-            _typedHandlers[(category, eventName)] = handler;
+            var key = (category.Trim(), eventName.Trim());
+            _typedHandlers[key] = handler;
+            _typedHandlerEventTypes[key] = typeof(T);
         }
 
         // ------------------------------------------------------------
@@ -104,7 +109,9 @@ namespace StreamerBot
         // ------------------------------------------------------------
         public void RegisterEventHandler(string category, string eventName, Action<JsonElement> handler)
         {
-            _typedHandlers[(category, eventName)] = handler;
+            var key = (category.Trim(), eventName.Trim());
+            _typedHandlers[key] = handler;
+            _typedHandlerEventTypes.TryRemove(key, out _);
         }
 
         // ------------------------------------------------------------
@@ -229,43 +236,19 @@ namespace StreamerBot
                                 ? data.Clone()
                                 : CreateEmptyPayload();
 
-                            var dispatchedTyped = false;
+                            var typed = CreateEventObject(category, eventName, payload);
+                            OnTypedEventReceived?.Invoke(category, eventName, typed);
 
-                            // ----------------------------------------------------
-                            // Typed event dispatch
-                            // ----------------------------------------------------
-                            if (StreamerBotEventRegistry.TryGetEventType(category, eventName, out var type))
+                            if (_typedHandlers.TryGetValue((category, eventName), out var del))
                             {
-                                try
+                                if (del is Action<JsonElement> rawHandler)
                                 {
-                                    var typed = (StreamerBotEventBase)JsonSerializer.Deserialize(payload.GetRawText(), type, EventJsonOptions);
-                                    typed.Raw = payload;
-                                    OnTypedEventReceived?.Invoke(category, eventName, typed);
-                                    dispatchedTyped = true;
-
-                                    if (_typedHandlers.TryGetValue((category, eventName), out var del))
-                                        del.DynamicInvoke(typed);
-
-                                    continue;
+                                    rawHandler(payload);
                                 }
-                                catch
+                                else
                                 {
-                                    // ignore typed deserialization errors
+                                    del.DynamicInvoke(typed);
                                 }
-                            }
-
-                            if (!dispatchedTyped)
-                            {
-                                OnEventReceived?.Invoke(category, eventName, payload);
-                            }
-
-                            // ----------------------------------------------------
-                            // Raw handler dispatch (JsonElement)
-                            // ----------------------------------------------------
-                            if (_typedHandlers.TryGetValue((category, eventName), out var rawDel)
-                                && rawDel is Action<JsonElement> rawHandler)
-                            {
-                                rawHandler(payload);
                             }
                         }
                         else
@@ -349,7 +332,12 @@ namespace StreamerBot
                 return false;
             }
 
-            return category.Length > 0 && eventName.Length > 0;
+            if (category.Length == 0 || eventName.Length == 0)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private static bool TryReadStringProperty(JsonElement element, string propertyName, out string value)
@@ -386,6 +374,59 @@ namespace StreamerBot
             category = key[..separator].Trim();
             eventName = key[(separator + 1)..].Trim();
             return category.Length > 0 && eventName.Length > 0;
+        }
+
+        private StreamerBotEventBase CreateEventObject(string category, string eventName, JsonElement payload)
+        {
+            var key = (category, eventName);
+            if (_typedHandlerEventTypes.TryGetValue(key, out var registeredType)
+                && TryCreateSpecificEvent(registeredType, category, eventName, payload, out var registeredEvent))
+            {
+                return registeredEvent;
+            }
+
+            if (StreamerBotEventRegistry.TryGetEventType(category, eventName, out var type)
+                && TryCreateSpecificEvent(type, category, eventName, payload, out var catalogEvent))
+            {
+                return catalogEvent;
+            }
+
+            var raw = new StreamerBotRawEvent();
+            PopulateEventMetadata(raw, category, eventName, payload);
+            return raw;
+        }
+
+        private static bool TryCreateSpecificEvent(
+            Type type,
+            string category,
+            string eventName,
+            JsonElement payload,
+            out StreamerBotEventBase evt)
+        {
+            evt = null!;
+            try
+            {
+                var typed = (StreamerBotEventBase?)JsonSerializer.Deserialize(payload.GetRawText(), type, EventJsonOptions);
+                if (typed is not null)
+                {
+                    PopulateEventMetadata(typed, category, eventName, payload);
+                    evt = typed;
+                    return true;
+                }
+            }
+            catch
+            {
+                // Fall back to a raw event object when a specific payload shape drifts.
+            }
+
+            return false;
+        }
+
+        private static void PopulateEventMetadata(StreamerBotEventBase evt, string category, string eventName, JsonElement payload)
+        {
+            evt.EventSource = category;
+            evt.EventType = eventName;
+            evt.Raw = payload;
         }
 
         private static string CreateAuthenticationToken(string password, string salt, string challenge)

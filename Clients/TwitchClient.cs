@@ -26,9 +26,9 @@ namespace StreamerBot
             connector.RegisterTypedEventHandler<TwitchFollowEvent>("Twitch", "Follow", evt => OnFollow?.Invoke(evt));
             connector.RegisterTypedEventHandler<TwitchRaidEvent>("Twitch", "Raid", evt => OnRaid?.Invoke(evt));
             connector.RegisterTypedEventHandler<TwitchCheerEvent>("Twitch", "Cheer", evt => OnCheer?.Invoke(evt));
-            connector.RegisterTypedEventHandler<TwitchSubscriptionEvent>("Twitch", "Subscription", evt => OnSubscription?.Invoke(evt));
+            connector.RegisterTypedEventHandler<TwitchSubscriptionEvent>("Twitch", "Sub", evt => OnSubscription?.Invoke(evt));
             connector.RegisterTypedEventHandler<TwitchGiftSubEvent>("Twitch", "GiftSub", evt => OnGiftSub?.Invoke(evt));
-            connector.RegisterTypedEventHandler<TwitchRedemptionEvent>("Twitch", "Redemption", evt => OnRedemption?.Invoke(evt));
+            connector.RegisterTypedEventHandler<TwitchRedemptionEvent>("Twitch", "RewardRedemption", evt => OnRedemption?.Invoke(evt));
             connector.RegisterTypedEventHandler<TwitchWhisperEvent>("Twitch", "Whisper", evt => OnWhisper?.Invoke(evt));
         }
 

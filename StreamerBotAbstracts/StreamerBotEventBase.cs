@@ -6,6 +6,12 @@ namespace StreamerBot.Events
 {
     public abstract class StreamerBotEventBase
     {
+        [JsonIgnore]
+        public string EventSource { get; set; } = string.Empty;
+
+        [JsonIgnore]
+        public string EventType { get; set; } = string.Empty;
+
         // Raw JSON payload for future-proofing
         public JsonElement Raw { get; set; }
 

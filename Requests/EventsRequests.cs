@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace StreamerBot.Requests
@@ -29,6 +29,23 @@ namespace StreamerBot.Requests
     }
 
     public class SubscribeResponse : StreamerBotResponse
+    {
+        [JsonPropertyName("events")]
+        public Dictionary<string, string[]> Events { get; set; } = new();
+    }
+
+    // -------------------------
+    // UnSubscribe
+    // -------------------------
+    public class UnSubscribeRequest : StreamerBotRequest
+    {
+        public override string Request => "UnSubscribe";
+
+        [JsonPropertyName("events")]
+        public Dictionary<string, string[]> Events { get; set; } = new();
+    }
+
+    public class UnSubscribeResponse : StreamerBotResponse
     {
         [JsonPropertyName("events")]
         public Dictionary<string, string[]> Events { get; set; } = new();
